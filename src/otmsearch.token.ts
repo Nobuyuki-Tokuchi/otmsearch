@@ -1,5 +1,13 @@
 interface SearchToken {}
 
+interface ValueToken extends SearchToken {
+    value: string;
+}
+
+interface OperatorToken extends SearchToken {
+    operator: string;
+}
+
 class KeyNameToken implements SearchToken {
     constructor(public name: string) {}
 
@@ -16,15 +24,23 @@ class VariableToken implements SearchToken {
     }
 }
 
-class ValueToken implements SearchToken {
-    constructor(public value: string) {}
+class KeywordVariableToken implements SearchToken {
+    constructor(public name: string) {}
 
     public toString(): string {
-        return `ValueToken{ value: '${this.value}' }`;
+        return `KeywordVariableToken{ name: '${this.name}' }`;
     }
 }
 
-class NumberToken implements SearchToken {
+class StringToken implements ValueToken {
+    constructor(public value: string) {}
+
+    public toString(): string {
+        return `StringToken{ value: '${this.value}' }`;
+    }
+}
+
+class NumberToken implements ValueToken {
     constructor(public value: string) {}
 
     public toString(): string {
@@ -32,7 +48,7 @@ class NumberToken implements SearchToken {
     }
 }
 
-class BinaryOperatorToken implements SearchToken {
+class BinaryOperatorToken implements OperatorToken {
     constructor(public operator: string) {}
 
     public toString(): string {
@@ -40,7 +56,7 @@ class BinaryOperatorToken implements SearchToken {
     }
 }
 
-class UnaryOperatorToken implements SearchToken {
+class UnaryOperatorToken implements OperatorToken {
     constructor(public operator: string) {}
 
     public toString(): string {
@@ -48,9 +64,8 @@ class UnaryOperatorToken implements SearchToken {
     }
 }
 
-
 type MatchindType = "^" | "$";
-class MatchingOperatorToken implements SearchToken {
+class MatchingOperatorToken implements OperatorToken {
     constructor(public operator: MatchindType) {}
 
     public toString(): string {
@@ -61,32 +76,47 @@ class MatchingOperatorToken implements SearchToken {
     public static readonly BACKWARD_MATCHIND: string = "$";
 }
 
+type BraceString = "(" | ")";
 class BraceToken implements SearchToken {
-    constructor(public value: string) {}
+    constructor(public tokenValue: BraceString) {}
 
     public toString(): string {
-        return `BraceToken{ value: ${this.value} }`;
+        return `BraceToken{ value: '${this.tokenValue}' }`;
     }
 }
 
-class SemicolonToken implements SearchToken {
-    constructor() {}
+type PatternString = "[" | "]";
+class PatternBraceToken implements SearchToken {
+    constructor(public tokenValue: PatternString) {}
 
     public toString(): string {
-        return "SemicolonToken";
+        return `ArrayBraceToken{ value: '${this.tokenValue}' }`;
     }
 }
 
-class ColonToken implements SearchToken {
-    constructor() {}
+type StatementString = "{" | "}";
+class StatementBraceToken implements SearchToken {
+    constructor(public tokenValue: StatementString) {}
 
     public toString(): string {
-        return "ColonToken";
+        return `StateBraceToken{ value: '${this.tokenValue}' }`;
     }
 }
 
-class BindToken implements SearchToken {
+class CommaToken implements SearchToken {
     constructor() {}
+
+    public toString(): string {
+        return "CommaToken";
+    }
+}
+
+class BindToken implements OperatorToken {
+    operator: string;
+
+    constructor() {
+        this.operator = ":";
+    }
 
     public toString(): string {
         return "BindToken";
