@@ -46,14 +46,14 @@ define      := key_name ':' (pattern | matching)
 matching    := ('^')? or_expr ('$')?
 or_expr     := and_expr (('or' | '|') and_expr)*
 and_expr    := (compare | not_expr) (('and' | '&') (compare | not_expr))*
-compare     := '@@length' ('<' | '<=' | '>' | '>=' | '==' | '!=' ) number
+compare     := ('%length' | number) ('<' | '<=' | '>' | '>=' | '==' | '!=') ('%length' | number)
 not_expr    := ('!'|'not')? term
 term        := value | variable | '(' matching ')'
 value       := string | number
 string      := '"' .+ '"'
 number      := [0-9]+
 variable    := '@' name
-key_name    := name ('.' name)* '[]'?
+key_name    := name ('.' name)* '[]'
 name        := [A-Za-z_][A-Za-z0-9_]+
 comment     := '#' .+ ('\r' | '\n')
 ```

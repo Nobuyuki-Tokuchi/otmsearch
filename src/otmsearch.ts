@@ -39,12 +39,17 @@ class OtmSearch {
                             break;
                     }
                 }
-                else if (buffer[0] === "@") {
-                    if (buffer.length > 2 && buffer[1] === "@") {
-                        list.push(new KeywordVariableToken(buffer));
+                else if (buffer[0] == "%") {
+                    if (buffer.match(/^%[A-Za-z_][A-Za-z0-9_]*$/)) {
+                        list.push(new KeywordVariableToken(buffer.substring(1)));
                     }
-                    else if (buffer.length > 1) {
-                        list.push(new VariableToken(buffer));
+                    else {
+                        throw new SyntaxError(`invalid token: ${buffer}`);
+                    }
+                }
+                else if (buffer[0] === "@") {
+                    if (buffer.match(/^@[A-Za-z_][A-Za-z0-9_]*$/)) {
+                        list.push(new VariableToken(buffer.substring(1)));
                     }
                     else {
                         throw new SyntaxError(`invalid token: ${buffer}`);
@@ -103,6 +108,7 @@ class OtmSearch {
                     else if (next === "u") {
                         i++;
                         if (this.code[i] === "{") {
+                            i++;
                             const index = this.code.indexOf("}", i);
                             const hex = this.code.substring(i, index);
                             if (hex.match(/[0-9A-Fa-f]+/)) {
@@ -110,7 +116,7 @@ class OtmSearch {
                                 i = index + 1;
                             }
                             else {
-                                throw new SyntaxError(`invalid token in string: \\x${hex}`);
+                                throw new SyntaxError(`invalid token in string: \\u{${hex}}`);
                             }
                         }
                         else {
@@ -120,7 +126,7 @@ class OtmSearch {
                                 i += 4;
                             }
                             else {
-                                throw new SyntaxError(`invalid token in string: \\x${hex}`);
+                                throw new SyntaxError(`invalid token in string: \\u${hex}`);
                             }
                         }
                     }
@@ -353,12 +359,19 @@ class OtmSearch {
         if (keyName instanceof KeyNameToken) {
             let point;
             let names = keyName.name.split(".");
+
+            if (!names[0].match(/^[A-Za-z_][A-Za-z0-9_]*(\[\])?$/)) {
+                throw new SyntaxError(`invalid keyName: ${names[0]}`);
+            }
     
             node.lhs = new KeyNameNode(names[0]);
             if (names.length > 1) {
                 point = node;
                 for (let i = 1; i < names.length; i++) {
                     let branch = new BindOperatorNode();
+                    if (!names[i].match(/^[A-Za-z_][A-Za-z0-9_]*(\[\])?$/)) {
+                        throw new SyntaxError(`invalid keyName: ${names[i]}`);
+                    }
                     branch.lhs = new KeyNameNode(names[i]);
     
                     point.rhs = branch;
@@ -758,7 +771,7 @@ class OtmSearch {
     private getNodeCode(node: SearchNode | null, targetName: string, depth: number, type: MatchingType): string {
         if (node instanceof VariableNode) {
             if (this.variables.has(node.name)) {
-                return this.translateMatching(this.variables.get(node.name)!, targetName, depth, type);
+                return "(" + this.translateMatching(this.variables.get(node.name)!, targetName, depth, type) + ")";
             }
             else {
                 throw new SyntaxError(`undefined variable: ${node.name}`);
@@ -789,10 +802,10 @@ class OtmSearch {
         let code: string;
 
         switch (node.value) {
-            case "@@length":
+            case "length":
                 code = "Array.from("+ targetName +").length";
                 break;
-            case "@@value":
+            case "value":
                 code = targetName;
                 break;
             default:
