@@ -1,4 +1,7 @@
-interface SearchToken {}
+interface SearchToken {
+    row: number;
+    column: number;
+}
 
 interface ValueToken extends SearchToken {
     value: string;
@@ -9,67 +12,67 @@ interface OperatorToken extends SearchToken {
 }
 
 class KeyNameToken implements SearchToken {
-    constructor(public name: string) {}
+    constructor(public name: string, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
-        return `KeyNameToken{ name: '${this.name}' }`;
+        return `KeyNameToken{ name: '${this.name}', row: ${this.row}, column: ${this.column} }`;
     }
 }
 
 class VariableToken implements SearchToken {
-    constructor(public name: string) {}
+    constructor(public name: string, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
-        return `VariableToken{ name: '${this.name}' }`;
+        return `VariableToken{ name: '${this.name}', row: ${this.row}, column: ${this.column} }`;
     }
 }
 
 class KeywordVariableToken implements SearchToken {
-    constructor(public name: string) {}
+    constructor(public name: string, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
-        return `KeywordVariableToken{ name: '${this.name}' }`;
+        return `KeywordVariableToken{ name: '${this.name}', row: ${this.row}, column: ${this.column} }`;
     }
 }
 
 class StringToken implements ValueToken {
-    constructor(public value: string) {}
+    constructor(public value: string, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
-        return `StringToken{ value: '${this.value}' }`;
+        return `StringToken{ value: '${this.value}', row: ${this.row}, column: ${this.column} }`;
     }
 }
 
 class NumberToken implements ValueToken {
-    constructor(public value: string) {}
+    constructor(public value: string, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
-        return `NumberToken{ value: '${this.value}' }`;
+        return `NumberToken{ value: '${this.value}', row: ${this.row}, column: ${this.column} }`;
     }
 }
 
 class BinaryOperatorToken implements OperatorToken {
-    constructor(public operator: string) {}
+    constructor(public operator: string, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
-        return `BinaryOperatorToken{ operator: '${this.operator}' }`;
+        return `BinaryOperatorToken{ operator: '${this.operator}', row: ${this.row}, column: ${this.column} }`;
     }
 }
 
 class UnaryOperatorToken implements OperatorToken {
-    constructor(public operator: string) {}
+    constructor(public operator: string, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
-        return `UnaryOperatorToken{ operator: '${this.operator}' }`;
+        return `UnaryOperatorToken{ operator: '${this.operator}', row: ${this.row}, column: ${this.column} }`;
     }
 }
 
 type MatchindType = "^" | "$";
 class MatchingOperatorToken implements OperatorToken {
-    constructor(public operator: MatchindType) {}
+    constructor(public operator: MatchindType, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
-        return `MatchingOperatorToken{ operator: '${this.operator}' }`;
+        return `MatchingOperatorToken{ operator: '${this.operator}', row: ${this.row}, column: ${this.column} }`;
     }
 
     public static readonly FORWARD_MATCHIND: string = "^";
@@ -78,47 +81,47 @@ class MatchingOperatorToken implements OperatorToken {
 
 type BraceString = "(" | ")";
 class BraceToken implements SearchToken {
-    constructor(public tokenValue: BraceString) {}
+    constructor(public tokenValue: BraceString, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
-        return `BraceToken{ value: '${this.tokenValue}' }`;
+        return `BraceToken{ value: '${this.tokenValue}', row: ${this.row}, column: ${this.column} }`;
     }
 }
 
 type PatternString = "[" | "]";
 class PatternBraceToken implements SearchToken {
-    constructor(public tokenValue: PatternString) {}
+    constructor(public tokenValue: PatternString, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
-        return `ArrayBraceToken{ value: '${this.tokenValue}' }`;
+        return `ArrayBraceToken{ value: '${this.tokenValue}', row: ${this.row}, column: ${this.column} }`;
     }
 }
 
 type StatementString = "{" | "}";
 class StatementBraceToken implements SearchToken {
-    constructor(public tokenValue: StatementString) {}
+    constructor(public tokenValue: StatementString, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
-        return `StateBraceToken{ value: '${this.tokenValue}' }`;
+        return `StateBraceToken{ value: '${this.tokenValue}', row: ${this.row}, column: ${this.column} }`;
     }
 }
 
 class CommaToken implements SearchToken {
-    constructor() {}
+    constructor(public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
-        return "CommaToken";
+        return `CommaToken{ row: ${this.row}, column: ${this.column} }`;
     }
 }
 
 class BindToken implements OperatorToken {
     operator: string;
 
-    constructor() {
+    constructor(public readonly row: number, public readonly column: number) {
         this.operator = ":";
     }
 
     public toString(): string {
-        return "BindToken";
+        return `BindToken{ row: ${this.row}, column: ${this.column} }`;
     }
 }

@@ -26,43 +26,45 @@ class OtmSearch {
     private tokenize(): SearchToken[] {
         const list: SearchToken[] = [];
         let buffer: string = "";
+        let row: number = 1;
+        let column: number = 0;
 
         const append = () => {
             if (buffer.length > 0) {
                 if (OtmSearch.KEYWORDS.indexOf(buffer) !== -1) {
                     switch(buffer) {
                         case "not":
-                            list.push(new UnaryOperatorToken(buffer));
+                            list.push(new UnaryOperatorToken(buffer, row, column - buffer.length));
                             break;
                         default:
-                            list.push(new BinaryOperatorToken(buffer));
+                            list.push(new BinaryOperatorToken(buffer, row, column - buffer.length));
                             break;
                     }
                 }
                 else if (buffer[0] == "%") {
                     if (buffer.match(/^%[A-Za-z_][A-Za-z0-9_]*$/)) {
-                        list.push(new KeywordVariableToken(buffer.substring(1)));
+                        list.push(new KeywordVariableToken(buffer.substring(1), row, column - buffer.length));
                     }
                     else {
-                        throw new SyntaxError(`invalid token: ${buffer}`);
+                        throw new SyntaxError(`invalid token: ${buffer}, row:${row}, column:${column}`);
                     }
                 }
                 else if (buffer[0] === "@") {
                     if (buffer.match(/^@[A-Za-z_][A-Za-z0-9_]*$/)) {
-                        list.push(new VariableToken(buffer.substring(1)));
+                        list.push(new VariableToken(buffer.substring(1), row, column - buffer.length));
                     }
                     else {
-                        throw new SyntaxError(`invalid token: ${buffer}`);
+                        throw new SyntaxError(`invalid token: ${buffer}, row:${row}, column:${column}`);
                     }
                 }
                 else if (buffer.match(/^".+"$/)) {
-                    list.push(new StringToken(buffer.substring(1, buffer.length - 1)));
+                    list.push(new StringToken(buffer.substring(1, buffer.length - 1), row, column - buffer.length));
                 }
                 else if (buffer.match(/^\d+$/)) {
-                    list.push(new NumberToken(buffer));
+                    list.push(new NumberToken(buffer, row, column - buffer.length));
                 }
                 else {
-                    list.push(new KeyNameToken(buffer));
+                    list.push(new KeyNameToken(buffer, row, column - buffer.length));
                 }
             }
 
@@ -85,38 +87,49 @@ class OtmSearch {
             const c = this.code[i];
             if(isString) {
                 if (c === "\r" || c === "\n") {
-                    throw new SyntaxError(`invalid token in string: ${c}`);
+                    throw new SyntaxError(`invalid token in string: ${c}, row:${row}, column:${column}`);
                 }
 
                 if (c === '\\') {
                     i++;
+                    column++;
+                    
                     const next = this.code[i];
                     if (escapeTable.has(next)) {
                         buffer += escapeTable.get(next);
+                        column++;
                     }
                     else if (next === "x") {
                         i++;
+                        column++;
+
                         const hex = this.code.substring(i, i + 2);
                         if (hex.match(/[0-9A-Fa-f]+/)) {
                             buffer += String.fromCharCode(parseInt(hex, 16));
                             i += 2;
+                            column += 2;
                         }
                         else {
-                            throw new SyntaxError(`invalid token in string: \\x${hex}`);
+                            throw new SyntaxError(`invalid token in string: \\x${hex}, row:${row}, column:${column}`);
                         }
                     }
                     else if (next === "u") {
                         i++;
+                        column++;
+
                         if (this.code[i] === "{") {
                             i++;
+                            column++;
+
                             const index = this.code.indexOf("}", i);
                             const hex = this.code.substring(i, index);
                             if (hex.match(/[0-9A-Fa-f]+/)) {
                                 buffer += String.fromCharCode(parseInt(hex, 16));
                                 i = index + 1;
+                                column += index + 1;
                             }
                             else {
-                                throw new SyntaxError(`invalid token in string: \\u{${hex}}`);
+                                throw new SyntaxError(`invalid token in string: \\u{${hex}}, row:${row}, column:${column}`);
                             }
                         }
                         else {
@@ -124,9 +137,10 @@ class OtmSearch {
                             if (hex.match(/[0-9A-Fa-f]+/)) {
                                 buffer += String.fromCharCode(parseInt(hex, 16));
                                 i += 4;
+                                column += 4;
                             }
                             else {
-                                throw new SyntaxError(`invalid token in string: \\u${hex}`);
+                                throw new SyntaxError(`invalid token in string: \\u${hex}, row:${row}, column:${column}`);
                             }
                         }
                     }
@@ -135,89 +149,111 @@ class OtmSearch {
                     buffer += c;
                     append();
                     isString = false;
+                    column++;
                 }
                 else {
                     buffer += c;
+                    column++;
                 }
             }
             else {
                 switch (c) {
                     case " ":
                     case "\t":
+                        append();
+                        column++;
+                        break;
                     case "\n":
                         append();
+                        row++;
+                        column = 0;
                         break;
                     case "\r":
                         append();
                         if (this.code[i + 1] === "\n") {
                             i++;
                         }
+                        row++;
+                        column = 1;
                         break;
                     case "#":
                         append();
                         while(i < this.code.length && this.code[i] !== "\r" && this.code[i] !== "\n") {
                             i++;
                         }
+                        row++;
+                        column = 0;
                         break;
                     case "&":
                         append();
-                        list.push(new BinaryOperatorToken("and"));
+                        list.push(new BinaryOperatorToken("and", row, column));
+                        column++;
                         break;
                     case "|":
                         append();
-                        list.push(new BinaryOperatorToken("or"));
+                        list.push(new BinaryOperatorToken("or", row, column));
+                        column++;
                         break;
                     case "=":
                         if(this.code[i + 1] === "=") {
                             append();
-                            list.push(new BinaryOperatorToken("=="));
+                            list.push(new BinaryOperatorToken("==", row, column));
                             i++;
+                            column += 2;
                         }
                         else {
-                            throw new SyntaxError(`invalid token (tokenizer): ${c}`);
+                            throw new SyntaxError(`invalid token (tokenizer): ${c}, row:${row}, column:${column}`);
                         }
                         break;
                     case ":":
                         append();
-                        list.push(new BindToken());
+                        list.push(new BindToken(row, column));
+                        column++;
                         break;
                     case "<":
                     case ">":
                         if(this.code[i + 1] === "=") {
                             append();
-                            list.push(new BinaryOperatorToken(c + "="));
+                            list.push(new BinaryOperatorToken(c + "=", row, column));
                             i++;
+                            column += 2;
                         }
                         else {
                             append();
-                            list.push(new BinaryOperatorToken(c));
+                            list.push(new BinaryOperatorToken(c, row, column));
+                            column++;
                         }
                         break;
                     case "!":
                         if(this.code[i + 1] === "=") {
                             append();
-                            list.push(new BinaryOperatorToken("!="));
+                            list.push(new BinaryOperatorToken("!=", row, column));
                             i++;
+                            column += 2;
                         }
                         else {
                             append();
-                            list.push(new UnaryOperatorToken("not"));
+                            list.push(new UnaryOperatorToken("not", row, column));
+                            column++;
                         }
                         break;
                     case "^":
                     case "$":
                         append();
-                        list.push(new MatchingOperatorToken(c));
+                        list.push(new MatchingOperatorToken(c, row, column));
+                        column++;
                         break;
                     case "(":
                     case ")":
                         append();
-                        list.push(new BraceToken(c));
+                        list.push(new BraceToken(c, row, column));
+                        column++;
                         break;
                     case "{":
                     case "}":
                         append();
-                        list.push(new StatementBraceToken(c));
+                        list.push(new StatementBraceToken(c, row, column));
+                        column++;
                         break;
                     case "[":
                         append();
@@ -226,31 +262,37 @@ class OtmSearch {
                             i++;
                             const next = this.code[i];
                             if (next !== "]") {
-                                throw new SyntaxError(`invalid token (tokenizer): ${last.name + c + next}`);
+                                throw new SyntaxError(`invalid token (tokenizer): ${last.name + c + next}, row:${row}, column:${column}`);
                             }
 
                             list.pop();
                             buffer = last.name + "[]";
+                            column += 2;
                         }
                         else {
-                            list.push(new PatternBraceToken(c));
+                            list.push(new PatternBraceToken(c, row, column));
+                            column++;
                         }
                         break;
                     case "]":
                         append();
-                        list.push(new PatternBraceToken(c));
+                        list.push(new PatternBraceToken(c, row, column));
+                        column++;
                         break;
                     case ",":
                         append();
-                        list.push(new CommaToken());
+                        list.push(new CommaToken(row, column));
+                        column++;
                         break;
                     case "\"":
                         append();
                         buffer += c;
                         isString = true;
+                        column++;
                         break;
                     default:
                         buffer += c;
+                        column++;
                         break;
                 }
             }
@@ -280,7 +322,7 @@ class OtmSearch {
             while (count < tokens.length && !(token instanceof PatternBraceToken && token.tokenValue === "]")) {
                 if (pattern.nodes.length > 0) {
                     if (!(token instanceof CommaToken)) {
-                        throw new SyntaxError(`required to ',' in pattern): ${token}`);
+                        throw new SyntaxError(`required to ',' in pattern): ${token}, row:${token.row}, column:${token.column}`);
                     }
                     count++;
                 }
@@ -292,7 +334,7 @@ class OtmSearch {
             }
 
             if (!(token instanceof PatternBraceToken && token.tokenValue === "]")) {
-                throw new SyntaxError(`invalid token (end pattern): ${token}`);
+                throw new SyntaxError(`invalid token (end pattern): ${token}, row:${token.row}, column:${token.column}`);
             }
             count++;
         }
@@ -317,7 +359,7 @@ class OtmSearch {
             while (count < tokens.length && !(token instanceof StatementBraceToken && token.tokenValue === "}")) {
                 if (statement.nodes.length > 0) {
                     if (!(token instanceof CommaToken)) {
-                        throw new SyntaxError(`required to ',' in statement): ${token}`);
+                        throw new SyntaxError(`required to ',' in statement): ${token}, row:${token.row}, column:${token.column}`);
                     }
                     count++;
                 }
@@ -329,7 +371,7 @@ class OtmSearch {
 
             token = tokens[count];
             if (!(token instanceof StatementBraceToken && token.tokenValue === "}")) {
-                throw new SyntaxError(`invalid token (end statement): ${token}`);
+                throw new SyntaxError(`invalid token (end statement): ${token}, row:${token.row}, column:${token.column}`);
             }
             count++;
         }
@@ -344,13 +386,13 @@ class OtmSearch {
         const keyName = tokens[count];
         
         if(!(keyName instanceof KeyNameToken) && !(keyName instanceof VariableToken)) {
-            throw new SyntaxError(`invalid token in define: ${keyName}`);
+            throw new SyntaxError(`invalid token in define: ${keyName}, row:${keyName.row}, column:${keyName.column}`);
         }
         count++;
 
         let token = tokens[count];
         if (!(token instanceof BindToken)) {
-            throw new SyntaxError(`require ':' after '${keyName}'`);
+            throw new SyntaxError(`require ':' after '${keyName}', row:${token.row}, column:${token.column}`);
         }
         count++;
 
@@ -361,7 +403,7 @@ class OtmSearch {
             let names = keyName.name.split(".");
 
             if (!names[0].match(/^[A-Za-z_][A-Za-z0-9_]*(\[\])?$/)) {
-                throw new SyntaxError(`invalid keyName: ${names[0]}`);
+                throw new SyntaxError(`invalid keyName: ${names[0]}, row:${keyName.row}, column:${keyName.column}`);
             }
     
             node.lhs = new KeyNameNode(names[0]);
@@ -370,7 +412,7 @@ class OtmSearch {
                 for (let i = 1; i < names.length; i++) {
                     let branch = new BindOperatorNode();
                     if (!names[i].match(/^[A-Za-z_][A-Za-z0-9_]*(\[\])?$/)) {
-                        throw new SyntaxError(`invalid keyName: ${names[i]}`);
+                        throw new SyntaxError(`invalid keyName: ${names[i]}, row:${keyName.row}, column:${keyName.column}`);
                     }
                     branch.lhs = new KeyNameNode(names[i]);
     
@@ -411,7 +453,7 @@ class OtmSearch {
                 count++;
             }
             else {
-                throw new SyntaxError(`invalid matching token: ${token}`);
+                throw new SyntaxError(`invalid matching token: ${token}, row:${token.row}, column:${token.column}`);
             }
         }
         else {
@@ -432,7 +474,7 @@ class OtmSearch {
                 count++;
             }
             else {
-                throw new SyntaxError(`invalid matching token: ${token}`);
+                throw new SyntaxError(`invalid matching token: ${token}, row:${token.row}, column:${token.column}`);
             }
         }
 
@@ -547,12 +589,12 @@ class OtmSearch {
 
                 const next = tokens[count];
                 if(!(next instanceof BraceToken && next.tokenValue === ")")) {
-                    throw new SyntaxError(`not found ')'. got ${tokens[count]}`);
+                    throw new SyntaxError(`not found ')'. got ${next}, row:${next.row}, column:${next.column}`);
                 }
                 node = brace;
             }
             else {
-                throw new SyntaxError(`invalid token in data: ${tokens[count]}`);
+                throw new SyntaxError(`invalid token in data: ${token}, row:${token.row}, column:${token.column}`);
             }
         }
         else if (token instanceof KeywordVariableToken) {
@@ -568,7 +610,7 @@ class OtmSearch {
             node = new StringNode(token.value);
         }
         else {
-            throw new SyntaxError(`invalid token in data: ${token}`);
+            throw new SyntaxError(`invalid token in data: ${token}, row:${token.row}, column:${token.column}`);
         }
 
         return [node, count + 1];
