@@ -174,15 +174,16 @@ class OtmSearch {
                             i++;
                         }
                         row++;
-                        column = 1;
+                        column = 0;
                         break;
                     case "#":
                         append();
                         while(i < this.code.length && this.code[i] !== "\r" && this.code[i] !== "\n") {
                             i++;
                         }
-                        row++;
-                        column = 0;
+                        if (this.code[i] === "\r" || this.code[i] === "\n") {
+                            i--;
+                        }
                         break;
                     case "&":
                         append();
@@ -647,6 +648,24 @@ class OtmSearch {
                 }
                 this.variables.set(state.lhs.name, state.rhs as MatchingOperatorNode);
             }
+            else if (state.rhs instanceof MatchingOperatorNode) {
+                const matching = state.rhs
+                if ((matching.matchType === MatchingOperatorNode.FORWARD || matching.matchType === MatchingOperatorNode.BACKWARD) && matching.node instanceof StringNode) {
+                   code += this.translateBinding(state, targetName, depth);
+                }
+                else if (matching.node instanceof BinaryOperatorNode && matching.node.operator !== "or") {
+                    code += this.translateBinding(state, targetName, depth);
+                }
+                else if (matching.node instanceof BraceNode) {
+                    code += this.translateBinding(state, targetName, depth);
+                }
+                else if (matching.node instanceof UnaryOperatorNode && matching.node.operator === "not") {
+                    code += this.translateBinding(state, targetName, depth);
+                }
+                else {
+                    code += "(" + this.translateBinding(state, targetName, depth) + ")";
+                }
+            }
             else {
                 code += "(" + this.translateBinding(state, targetName, depth) + ")";
             }
@@ -666,6 +685,24 @@ class OtmSearch {
                         throw new SyntaxError(`invalid node in binding variable: ${pattern.rhs}`);
                     }
                     this.variables.set(pattern.lhs.name, pattern.rhs as MatchingOperatorNode);
+                }
+                else if (pattern.rhs instanceof MatchingOperatorNode) {
+                    const matching = pattern.rhs
+                    if ((matching.matchType === MatchingOperatorNode.FORWARD || matching.matchType === MatchingOperatorNode.BACKWARD) && matching.node instanceof StringNode) {
+                       code += this.translateBinding(pattern, targetName, depth);
+                    }
+                    else if (matching.node instanceof BinaryOperatorNode) {
+                        code += this.translateBinding(pattern, targetName, depth);
+                    }
+                    else if (matching.node instanceof BraceNode) {
+                        code += this.translateBinding(pattern, targetName, depth);
+                    }
+                    else if (matching.node instanceof UnaryOperatorNode && matching.node.operator === "not") {
+                        code += this.translateBinding(pattern, targetName, depth);
+                    }
+                    else {
+                        code += "(" + this.translateBinding(pattern, targetName, depth) + ")";
+                    }
                 }
                 else {
                     code += "(" + this.translateBinding(pattern, targetName, depth) + ")";
@@ -771,14 +808,79 @@ class OtmSearch {
         if (node.lhs instanceof NumberNode) {
             code = this.translateNumber(node.lhs);
         }
+        else if (node.lhs instanceof StringNode) {
+            code = "\"" + node.lhs.value + "\"";
+        }
         else {
             code = this.getNodeCode(node.lhs, targetName, depth, type);
         }
 
-        code += " " + node.operator + " ";
+        switch (node.operator) {
+            case "==":
+                code += " === ";
+                break;
+            case "!=":
+                code += " !== ";
+                break;
+            default:
+                code += " " + node.operator + " ";
+                break;
+        }
 
         if (node.rhs instanceof NumberNode) {
             code += this.translateNumber(node.rhs);
+        }
+        else if (node.rhs instanceof StringNode) {
+            code += "\"" + node.rhs.value + "\"";
+        }
+        else {
+            code += this.getNodeCode(node.rhs, targetName, depth, type);
+        }
+        
+        return code;
+    }
+
+    private translateNotCompareOperator(node: BinaryOperatorNode, targetName: string, depth: number, type: MatchingType = MatchingOperatorNode.PARTIAL): string {
+        let code: string;
+
+        if (node.lhs instanceof NumberNode) {
+            code = this.translateNumber(node.lhs);
+        }
+        else if (node.lhs instanceof StringNode) {
+            code = "\"" + node.lhs.value + "\"";
+        }
+        else {
+            code = this.getNodeCode(node.lhs, targetName, depth, type);
+        }
+
+        switch (node.operator) {
+            case "==":
+                code += " !== ";
+                break;
+            case "!=":
+                code += " === ";
+                break;
+            case ">=":
+                code += " < ";
+                break;
+            case "<=":
+                code += " > ";
+                break;
+            case ">":
+                code += " <= ";
+                break;
+            case "<":
+                code += " >= ";
+                break;
+            default:
+                throw new SyntaxError(`invalid node: ${node}`);
+        }
+
+        if (node.rhs instanceof NumberNode) {
+            code += this.translateNumber(node.rhs);
+        }
+        else if (node.rhs instanceof StringNode) {
+            code += "\"" + node.rhs.value + "\"";
         }
         else {
             code += this.getNodeCode(node.rhs, targetName, depth, type);
@@ -789,10 +891,21 @@ class OtmSearch {
 
     private translateUnaryOperator(node: UnaryOperatorNode, targetName: string, depth: number, type: MatchingType = MatchingOperatorNode.PARTIAL): string {
         let code: string;
+        let childNode: SearchNode | ValueNode | OperatorNode | null = node.node;
 
         switch (node.operator) {
             case "not":
-                code = "!(" + this.getNodeCode(node.node, targetName, depth, type) + ")";
+                while ((childNode instanceof MatchingOperatorNode && childNode.matchType === MatchingOperatorNode.PARTIAL)
+                    || childNode instanceof BraceNode) {
+                    childNode = childNode.node;
+                }
+                
+                if (childNode instanceof BinaryOperatorNode && OtmSearch.COMPARE_OPERANDS.indexOf(childNode.operator) !== -1) {
+                    code = this.translateNotCompareOperator(childNode, targetName, depth, type);
+                }
+                else {
+                    code = "!(" + this.getNodeCode(childNode, targetName, depth, type) + ")";
+                }
                 break;
             default:
                 throw new SyntaxError(`invalid node (in unary): ${node.node}`);
@@ -821,7 +934,6 @@ class OtmSearch {
         }
         else if (node instanceof BinaryOperatorNode) {
             return this.translateBinaryOperator(node, targetName, depth, type);
-            
         }
         else if (node instanceof UnaryOperatorNode) {
             return this.translateUnaryOperator(node, targetName, depth, type);
@@ -888,4 +1000,8 @@ class OtmSearch {
     private static readonly KEYWORDS: string[] = [
         "and", "or", "not",
     ]
+    
+    private static readonly COMPARE_OPERANDS: string[] = [
+        "==", "!=", ">=", "<=", ">", "<"
+    ];
 }
