@@ -1,18 +1,20 @@
-interface SearchNode {}
+export interface SearchNode {
+    toString(): string;
+}
 
-interface DefineNode extends SearchNode {
+export interface DefineNode extends SearchNode {
     name: string;
 }
 
-interface ValueNode extends SearchNode {
+export interface ValueNode extends SearchNode {
     value: string;
 }
 
-interface OperatorNode extends SearchNode {
+export interface OperatorNode extends SearchNode {
     operator: string;
 }
 
-class StatementNode implements SearchNode {
+export class StatementNode implements SearchNode {
     public nodes: BindOperatorNode[];
 
     constructor() {
@@ -24,7 +26,7 @@ class StatementNode implements SearchNode {
     }
 }
 
-class PatternNode implements SearchNode {
+export class PatternNode implements SearchNode {
     public nodes: (BindOperatorNode | StatementNode)[];
 
     constructor() {
@@ -36,7 +38,7 @@ class PatternNode implements SearchNode {
     }
 }
 
-class KeyNameNode implements DefineNode {
+export class KeyNameNode implements DefineNode {
     public name: string;
     public isArray: boolean;
     constructor(name: string) {
@@ -56,7 +58,7 @@ class KeyNameNode implements DefineNode {
     }
 }
 
-class VariableNode implements DefineNode, ValueNode {
+export class VariableNode implements DefineNode, ValueNode {
     public name: string;
 
     constructor(name: string) {
@@ -76,7 +78,7 @@ class VariableNode implements DefineNode, ValueNode {
     }
 }
 
-class KeywordVariableNode implements ValueNode {
+export class KeywordVariableNode implements ValueNode {
     public value: string;
 
     constructor(value: string) {
@@ -88,7 +90,7 @@ class KeywordVariableNode implements ValueNode {
     }
 }
 
-class StringNode implements ValueNode {
+export class StringNode implements ValueNode {
     constructor(public value: string) {}
 
     public toString(): string {
@@ -96,7 +98,7 @@ class StringNode implements ValueNode {
     }
 }
 
-class NumberNode implements ValueNode {
+export class NumberNode implements ValueNode {
     constructor(public value: string) {}
 
     public toString(): string {
@@ -104,7 +106,7 @@ class NumberNode implements ValueNode {
     }
 }
 
-class BinaryOperatorNode implements OperatorNode {
+export class BinaryOperatorNode implements OperatorNode {
     public rhs: ValueNode | OperatorNode | null;
     public lhs: ValueNode | OperatorNode | null;
 
@@ -118,7 +120,7 @@ class BinaryOperatorNode implements OperatorNode {
     }
 }
 
-class UnaryOperatorNode implements OperatorNode {
+export class UnaryOperatorNode implements OperatorNode {
     public node: ValueNode | OperatorNode | null;
     constructor(public operator: string) {
         this.node = null;
@@ -129,7 +131,7 @@ class UnaryOperatorNode implements OperatorNode {
     }
 }
 
-class BindOperatorNode implements OperatorNode {
+export class BindOperatorNode implements OperatorNode {
     public lhs: VariableNode | KeyNameNode | null;
     public rhs: StatementNode | PatternNode | MatchingOperatorNode | OperatorNode | null;
     public readonly operator: string;
@@ -145,8 +147,8 @@ class BindOperatorNode implements OperatorNode {
     }
 }
 
-type MatchingType = 0 | 1 | 2 | 3;
-class MatchingOperatorNode implements OperatorNode {
+export type MatchingType = 0 | 1 | 2 | 3;
+export class MatchingOperatorNode implements OperatorNode {
     public node: ValueNode | OperatorNode | null;
     public matchType: MatchingType;
 
@@ -172,8 +174,7 @@ class MatchingOperatorNode implements OperatorNode {
     }
 
     public toString(): string {
-        let matchType: string = this.operator;
-
+        const matchType: string = this.operator;
         return `MatchingOperatorNode{ matchType: "${matchType}", node: ${this.node} }`;
     }
 
@@ -188,7 +189,7 @@ class MatchingOperatorNode implements OperatorNode {
     ]);
 }
 
-class BraceNode implements OperatorNode {
+export class BraceNode implements OperatorNode {
     public node: OperatorNode | null;
     public readonly operator: string;
 

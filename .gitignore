@@ -1,0 +1,7 @@
+/test
+/node_modules
+/.vscode
+*.js
+*.js.map
+/dist
+!webpack.config.js

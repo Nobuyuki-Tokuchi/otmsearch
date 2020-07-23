@@ -1,0 +1,17 @@
+{
+  "name": "otmsearch",
+  "version": "1.0.0",
+  "description": "OTM-JSON形式のファイルを比較的簡易的な構文でスクリプト検索のようなことを行うためのライブラリ",
+  "main": "./src/otmsearch.ts",
+  "scripts": {
+    "packing": "webpack"
+  },
+  "author": "Nobuyuki Tokuchi",
+  "license": "MIT",
+  "dependencies": {
+    "ts-loader": "^8.0.1",
+    "typescript": "^3.9.7",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.12"
+  }
+}

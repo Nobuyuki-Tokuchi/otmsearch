@@ -1,17 +1,17 @@
-interface SearchToken {
+export interface SearchToken {
     row: number;
     column: number;
 }
 
-interface ValueToken extends SearchToken {
+export interface ValueToken extends SearchToken {
     value: string;
 }
 
-interface OperatorToken extends SearchToken {
+export interface OperatorToken extends SearchToken {
     operator: string;
 }
 
-class KeyNameToken implements SearchToken {
+export class KeyNameToken implements SearchToken {
     constructor(public name: string, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
@@ -19,7 +19,7 @@ class KeyNameToken implements SearchToken {
     }
 }
 
-class VariableToken implements SearchToken {
+export class VariableToken implements SearchToken {
     constructor(public name: string, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
@@ -27,7 +27,7 @@ class VariableToken implements SearchToken {
     }
 }
 
-class KeywordVariableToken implements SearchToken {
+export class KeywordVariableToken implements SearchToken {
     constructor(public name: string, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
@@ -35,7 +35,7 @@ class KeywordVariableToken implements SearchToken {
     }
 }
 
-class StringToken implements ValueToken {
+export class StringToken implements ValueToken {
     constructor(public value: string, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
@@ -43,7 +43,7 @@ class StringToken implements ValueToken {
     }
 }
 
-class NumberToken implements ValueToken {
+export class NumberToken implements ValueToken {
     constructor(public value: string, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
@@ -51,7 +51,7 @@ class NumberToken implements ValueToken {
     }
 }
 
-class BinaryOperatorToken implements OperatorToken {
+export class BinaryOperatorToken implements OperatorToken {
     constructor(public operator: string, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
@@ -59,7 +59,7 @@ class BinaryOperatorToken implements OperatorToken {
     }
 }
 
-class UnaryOperatorToken implements OperatorToken {
+export class UnaryOperatorToken implements OperatorToken {
     constructor(public operator: string, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
@@ -68,7 +68,7 @@ class UnaryOperatorToken implements OperatorToken {
 }
 
 type MatchindType = "^" | "$";
-class MatchingOperatorToken implements OperatorToken {
+export class MatchingOperatorToken implements OperatorToken {
     constructor(public operator: MatchindType, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
@@ -80,7 +80,7 @@ class MatchingOperatorToken implements OperatorToken {
 }
 
 type BraceString = "(" | ")";
-class BraceToken implements SearchToken {
+export class BraceToken implements SearchToken {
     constructor(public tokenValue: BraceString, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
@@ -89,7 +89,7 @@ class BraceToken implements SearchToken {
 }
 
 type PatternString = "[" | "]";
-class PatternBraceToken implements SearchToken {
+export class PatternBraceToken implements SearchToken {
     constructor(public tokenValue: PatternString, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
@@ -98,7 +98,7 @@ class PatternBraceToken implements SearchToken {
 }
 
 type StatementString = "{" | "}";
-class StatementBraceToken implements SearchToken {
+export class StatementBraceToken implements SearchToken {
     constructor(public tokenValue: StatementString, public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
@@ -106,7 +106,7 @@ class StatementBraceToken implements SearchToken {
     }
 }
 
-class CommaToken implements SearchToken {
+export class CommaToken implements SearchToken {
     constructor(public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
@@ -114,7 +114,7 @@ class CommaToken implements SearchToken {
     }
 }
 
-class BindToken implements OperatorToken {
+export class BindToken implements OperatorToken {
     operator: string;
 
     constructor(public readonly row: number, public readonly column: number) {
