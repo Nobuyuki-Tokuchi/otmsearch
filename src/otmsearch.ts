@@ -406,17 +406,18 @@ export default class OtmSearch {
         if (keyName instanceof Token.KeyNameToken) {
             let point;
             const names = keyName.name.split(".");
+            const regexp = /^[A-Za-z_][A-Za-z0-9_]*(\?)?(\[\])?$/;
 
-            if (!names[0].match(/^[A-Za-z_][A-Za-z0-9_]*(\[\])?$/)) {
+            if (!names[0].match(regexp)) {
                 throw new SyntaxError(`invalid keyName: ${names[0]}, row:${keyName.row}, column:${keyName.column}`);
             }
-    
+            
             node.lhs = new Node.KeyNameNode(names[0]);
             if (names.length > 1) {
                 point = node;
                 for (let i = 1; i < names.length; i++) {
                     const branch = new Node.BindOperatorNode();
-                    if (!names[i].match(/^[A-Za-z_][A-Za-z0-9_]*(\[\])?$/)) {
+                    if (!names[i].match(regexp)) {
                         throw new SyntaxError(`invalid keyName: ${names[i]}, row:${keyName.row}, column:${keyName.column}`);
                     }
                     branch.lhs = new Node.KeyNameNode(names[i]);
@@ -655,8 +656,7 @@ export default class OtmSearch {
             }
             else if (state.rhs instanceof Node.MatchingOperatorNode) {
                 const matching = state.rhs
-                if ((matching.matchType === Node.MatchingOperatorNode.FORWARD || matching.matchType === Node.MatchingOperatorNode.BACKWARD)
-                    && matching.node instanceof Node.StringNode) {
+                if (matching.node instanceof Node.StringNode) {
                    code += this.translateBinding(state, targetName, depth);
                 }
                 else if (matching.node instanceof Node.BinaryOperatorNode && matching.node.operator !== "or") {
@@ -666,6 +666,9 @@ export default class OtmSearch {
                     code += this.translateBinding(state, targetName, depth);
                 }
                 else if (matching.node instanceof Node.UnaryOperatorNode && matching.node.operator === "not") {
+                    code += this.translateBinding(state, targetName, depth);
+                }
+                else if (node.nodes.length === 1) {
                     code += this.translateBinding(state, targetName, depth);
                 }
                 else {
@@ -694,8 +697,7 @@ export default class OtmSearch {
                 }
                 else if (pattern.rhs instanceof Node.MatchingOperatorNode) {
                     const matching = pattern.rhs
-                    if ((matching.matchType === Node.MatchingOperatorNode.FORWARD || matching.matchType === Node.MatchingOperatorNode.BACKWARD)
-                        && matching.node instanceof Node.StringNode) {
+                    if (matching.node instanceof Node.StringNode) {
                        code += this.translateBinding(pattern, targetName, depth);
                     }
                     else if (matching.node instanceof Node.BinaryOperatorNode) {
@@ -705,6 +707,9 @@ export default class OtmSearch {
                         code += this.translateBinding(pattern, targetName, depth);
                     }
                     else if (matching.node instanceof Node.UnaryOperatorNode && matching.node.operator === "not") {
+                        code += this.translateBinding(pattern, targetName, depth);
+                    }
+                    else if (node.nodes.length === 1) {
                         code += this.translateBinding(pattern, targetName, depth);
                     }
                     else {
@@ -731,10 +736,20 @@ export default class OtmSearch {
 
             if (node.lhs.isArray) {
                 newTarget = "x" + (depth + 1);
-                code += targetName +"."+ node.lhs.name + ".some((" + newTarget + ") => ";
+
+                if (node.lhs.isOptional) {
+                    code += "("+ targetName +"."+ node.lhs.name + "?." + "some((" + newTarget + ") => ";
+                }
+                else {
+                    code +=  targetName +"."+ node.lhs.name + "." + "some((" + newTarget + ") => ";
+                }
             }
             else {
-                newTarget = targetName +"."+ node.lhs.name;
+                newTarget = targetName + "." + node.lhs.name;
+
+                if (node.lhs.isOptional || targetName.endsWith("?")) {
+                    newTarget += "?";
+                }
             }
 
             depth++;
@@ -757,6 +772,9 @@ export default class OtmSearch {
 
             if (node.lhs.isArray) {
                 code += ")";
+                if (node.lhs.isOptional) {
+                    code += " ?? false)";
+                }
             }
         }
         else {
@@ -963,10 +981,20 @@ export default class OtmSearch {
 
         switch (node.value) {
             case "length":
-                code = "Array.from("+ targetName +").length";
+                if (targetName.endsWith("?")) {
+                    code = "Array.from("+ targetName.slice(0, -1) +" ?? []).length";
+                }
+                else {
+                    code = "Array.from("+ targetName +").length";
+                }
                 break;
             case "value":
-                code = targetName;
+                if (targetName.endsWith("?")) {
+                    code = targetName.slice(0, -1);
+                }
+                else {
+                    code = targetName;
+                }
                 break;
             default:
                 throw new SyntaxError(`invalid Keyword Value: ${node.value}`);
@@ -980,7 +1008,12 @@ export default class OtmSearch {
 
         switch (type) {
             case Node.MatchingOperatorNode.PARTIAL:
-                code = targetName + ".indexOf(\"" + node.value + "\") !== -1";
+                if (targetName.endsWith("?")) {
+                    code = "(" + targetName + ".indexOf(\"" + node.value + "\") ?? -1) !== -1";
+                }
+                else {
+                    code = targetName + ".indexOf(\"" + node.value + "\") !== -1";
+                }
                 break;
             case Node.MatchingOperatorNode.FORWARD:
                 code = targetName + ".startsWith(\"" + node.value + "\")";
@@ -992,7 +1025,7 @@ export default class OtmSearch {
                 code = targetName + " === \"" + node.value + "\"";
                 break;
             default:
-                code = targetName + ".indexOf(\"" + node.value + "\") !== -1";
+                code = "(" + targetName + ".indexOf(\"" + node.value + "\") ?? -1) !== -1";
                 break;
         }
 

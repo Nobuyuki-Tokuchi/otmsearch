@@ -34,27 +34,29 @@ export class PatternNode implements SearchNode {
     }
     
     public toString(): string {
-        return `ArrayNode{ nodes: [${this.nodes.join(",")}] }`;
+        return `PatternNode{ nodes: [${this.nodes.join(",")}] }`;
     }
 }
 
 export class KeyNameNode implements DefineNode {
     public name: string;
     public isArray: boolean;
+    public isOptional: boolean;
+
     constructor(name: string) {
-        const index = name.indexOf("[]");
-        if (index !== -1) {
-            this.name = name.substring(0, index);
-            this.isArray = true;
+        this.isArray = name.endsWith("[]");
+        if (this.isArray) {
+            name = name.slice(0, -2);
         }
-        else {
-            this.name = name;
-            this.isArray = false;
+        this.isOptional = name.endsWith("?");
+        if (this.isOptional) {
+            name = name.slice(0, -1);
         }
+        this.name = name;
     }
 
     public toString(): string {
-        return `KeywordNode{ node: ${this.name}, isArray: ${this.isArray} }`;
+        return `KeywordNode{ node: ${this.name}, isArray: ${this.isArray}, isOptional: ${this.isOptional} }`;
     }
 }
 

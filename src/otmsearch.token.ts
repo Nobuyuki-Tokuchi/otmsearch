@@ -67,9 +67,8 @@ export class UnaryOperatorToken implements OperatorToken {
     }
 }
 
-type MatchindType = "^" | "$";
 export class MatchingOperatorToken implements OperatorToken {
-    constructor(public operator: MatchindType, public readonly row: number, public readonly column: number) { }
+    constructor(public operator: "^" | "$", public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
         return `MatchingOperatorToken{ operator: '${this.operator}', row: ${this.row}, column: ${this.column} }`;
@@ -79,27 +78,24 @@ export class MatchingOperatorToken implements OperatorToken {
     public static readonly BACKWARD_MATCHIND: string = "$";
 }
 
-type BraceString = "(" | ")";
 export class BraceToken implements SearchToken {
-    constructor(public tokenValue: BraceString, public readonly row: number, public readonly column: number) { }
+    constructor(public tokenValue: "(" | ")", public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
         return `BraceToken{ value: '${this.tokenValue}', row: ${this.row}, column: ${this.column} }`;
     }
 }
 
-type PatternString = "[" | "]";
 export class PatternBraceToken implements SearchToken {
-    constructor(public tokenValue: PatternString, public readonly row: number, public readonly column: number) { }
+    constructor(public tokenValue: "[" | "]", public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
         return `ArrayBraceToken{ value: '${this.tokenValue}', row: ${this.row}, column: ${this.column} }`;
     }
 }
 
-type StatementString = "{" | "}";
 export class StatementBraceToken implements SearchToken {
-    constructor(public tokenValue: StatementString, public readonly row: number, public readonly column: number) { }
+    constructor(public tokenValue: "{" | "}", public readonly row: number, public readonly column: number) { }
 
     public toString(): string {
         return `StateBraceToken{ value: '${this.tokenValue}', row: ${this.row}, column: ${this.column} }`;
