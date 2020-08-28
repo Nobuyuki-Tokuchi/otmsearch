@@ -1,18 +1,18 @@
 # OTM Search
-OTM-JSON形式のファイルを比較的簡易的な構文でスクリプト検索のようなことを行うためのライブラリ．
+OTM-JSON形式の辞書を比較的簡易的な構文でスクリプト検索のようなことを行うためのライブラリ．
 
 ## 使用方法
 ```
-    // 検索スクリプト文字列をコンストラクタに渡す
-    const search = new OtmSearch(code.value);
-    // コンパイルすると`function (words) { ~ }`の関数が作成される．
-    const func = search.compile();
+// 検索スクリプト文字列をコンストラクタに渡す
+const search = new OtmSearch(code.value);
+// コンパイルすると`function (words) { ~ }`の関数が作成される．
+const func = search.compile();
 ```
 
 ## 入力例
 ```
-@verb : "動詞",
-words[] : [
+[
+    @verb : "動詞",
     {
         entry : {
             form : ^ "a"
@@ -83,3 +83,6 @@ entry?.form: "a" | "b"
 # `translations?[].title?: "名詞" | "動詞"`とはならない．
 translations?[].title: "名詞" | "動詞"
 ```
+
+### その他
+配列のfilterメソッドに対してコンパイルした結果の関数を渡す形となるのであれば，OTM-JSON形式の辞書以外でも動作すると思いますが，保証はしません．
